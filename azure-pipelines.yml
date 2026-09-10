@@ -9,14 +9,27 @@ steps:
 - checkout: self
   displayName: Checkout WrongSecrets Repository
 
+#Login to Azure and authenticate Docker with ACR
+- task: AzureCLI@2
+  displayName: Login to ACR
+  inputs:
+    azureSubscription: 'securityscanner-acr'
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      az acr login --name securityscanner
+
+# Create report directory outside the repository
 - script: |
     mkdir -p "$(Build.ArtifactStagingDirectory)/security-reports"
   displayName: Create Security Reports Directory
 
+# Pull scanner image
 - script: |
     docker pull securityscanner.azurecr.io/security-scanner:latest
   displayName: Pull Security Scanner Image
 
+# Run scanner
 - script: |
     docker run --rm \
       -e REPO_NAME=wrongsecrets \
@@ -25,14 +38,16 @@ steps:
       securityscanner.azurecr.io/security-scanner:latest
   displayName: Run Security Scanner
 
+# Verify reports
 - script: |
-    echo "Generated reports:"
+    echo "Generated security reports:"
     find "$(Build.ArtifactStagingDirectory)/security-reports" -type f -print
   displayName: Verify Security Reports
 
+# Publish reports
 - task: PublishBuildArtifacts@1
   displayName: Publish Security Reports
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/security-reports'
-    ArtifactName: 'security-reports'
-    publishLocation: 'Container'
+    ArtifactName: security-reports
+    publishLocation: Container

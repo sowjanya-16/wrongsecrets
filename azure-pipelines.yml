@@ -6,34 +6,17 @@ pool:
 
 steps:
 
-# 1. Checkout the WrongSecrets repository
 - checkout: self
   displayName: Checkout WrongSecrets Repository
 
-
-# 2. Login to Azure Container Registry
-# Replace YOUR_ACR_SERVICE_CONNECTION with your Azure DevOps
-# Docker Registry service connection name.
-- task: Docker@2
-  displayName: Login to Azure Container Registry
-  inputs:
-    command: login
-    containerRegistry: 'securityscanner.azurecr.io'
-
-
-# 3. Create directory outside the repository for security reports
 - script: |
     mkdir -p "$(Build.ArtifactStagingDirectory)/security-reports"
   displayName: Create Security Reports Directory
 
-
-# 4. Pull the security scanner image from ACR
 - script: |
     docker pull securityscanner.azurecr.io/security-scanner:latest
   displayName: Pull Security Scanner Image
 
-
-# 5. Run the security scanner
 - script: |
     docker run --rm \
       -e REPO_NAME=wrongsecrets \
@@ -42,15 +25,11 @@ steps:
       securityscanner.azurecr.io/security-scanner:latest
   displayName: Run Security Scanner
 
-
-# 6. Show generated reports
 - script: |
-    echo "Security reports generated:"
-    find "$(Build.ArtifactStagingDirectory)/security-reports" -type f -maxdepth 3 -print
+    echo "Generated reports:"
+    find "$(Build.ArtifactStagingDirectory)/security-reports" -type f -print
   displayName: Verify Security Reports
 
-
-# 7. Publish reports as Azure DevOps pipeline artifacts
 - task: PublishBuildArtifacts@1
   displayName: Publish Security Reports
   inputs:
